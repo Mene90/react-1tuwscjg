@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, useRef } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://xxxx.supabase.co";   // <-- sostituisci
-const SUPABASE_KEY = "eyJhbGciOi...";               // <-- sostituisci
+const SUPABASE_URL = "https://wfecmedeqgnupvjixkad.supabase.co";   // <-- sostituisci
+const SUPABASE_KEY = "sb_publishable_pLRwZPPJVbQzAXllZcPszw_x1CblPEM";               // <-- sostituisci
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
