@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, createContext, useCon
 import * as XLSX from "xlsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://xxxx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOi...";
+const SUPABASE_URL = "https://wfecmedeqgnupvjixkad.supabase.co";
+const SUPABASE_KEY = "sb_publishable_pLRwZPPJVbQzAXllZcPszw_x1CblPEM";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
