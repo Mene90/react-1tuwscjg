@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, createContext, useCon
 import * as XLSX from "xlsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://wfecmedeqgnupvjixkad.supabase.co";
-const SUPABASE_KEY = "sb_publishable_pLRwZPPJVbQzAXllZcPszw_x1CblPEM";
+const SUPABASE_URL = "https://xxxx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOi...";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
@@ -1180,6 +1180,17 @@ const ForecastPage = ({ fixedTx, accounts, categories, accMap, catMap, token, us
   );
 };
 
+// ─── PREVIEW PANEL (used in ReportBuilder) ───────────────────────────────────
+const PreviewPanel = ({ report, computeReportData, renderChart }) => {
+  const data = computeReportData(report);
+  return (
+    <div style={{background:"#f8f9fc",borderRadius:14,padding:16,marginBottom:16}}>
+      <div style={{fontSize:11,fontWeight:700,color:"#bbb",letterSpacing:1,marginBottom:10}}>ANTEPRIMA</div>
+      {renderChart(report, data)}
+    </div>
+  );
+};
+
 // ─── GROUP C: REPORT BUILDER ──────────────────────────────────────────────────
 const ReportBuilder = ({ transactions, accounts, categories, catMap, accMap, token, user, showToast, isMobile }) => {
   const t = useMemo(()=>sb.db(token),[token]);
@@ -1363,15 +1374,9 @@ const ReportBuilder = ({ transactions, accounts, categories, catMap, accMap, tok
           </Field>
 
           {/* Live preview */}
-          {building.metric&&building.chartType&&(()=>{
-            const data = computeReportData(building);
-            return (
-              <div style={{background:"#f8f9fc",borderRadius:14,padding:16,marginBottom:16}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#bbb",letterSpacing:1,marginBottom:10}}>ANTEPRIMA</div>
-                {renderChart(building,data)}
-              </div>
-            );
-          })()}
+          {building.metric&&building.chartType&&(
+            <PreviewPanel report={building} computeReportData={computeReportData} renderChart={renderChart}/>
+          )}
 
           <div style={{display:"flex",gap:10}}>
             <div style={{flex:1}}><Btn onClick={()=>{setBuilding(null);setEditMode(false);}} label="Annulla" outline color="#999" small/></div>
@@ -2128,6 +2133,7 @@ const BudgetApp = () => {
                   </div>
                 </div>
               )}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
                 {[{l:"Entrate",v:incomesTx.reduce((s,tx)=>s+Number(tx.amount),0),c:"#10b981"},{l:"Uscite",v:expenses.reduce((s,tx)=>s+Number(tx.amount),0),c:"#ef4444"},{l:"Saldo",v:incomesTx.reduce((s,tx)=>s+Number(tx.amount),0)-expenses.reduce((s,tx)=>s+Number(tx.amount),0),c:"#6366f1"}].map(k=>(<div key={k.l} style={{background:"#fff",borderRadius:14,padding:12,boxShadow:"0 2px 8px #0001",textAlign:"center"}}><div style={{fontSize:11,color:"#bbb",marginBottom:3}}>{k.l}</div><div style={{fontSize:16,fontWeight:800,color:k.c}}>{fmtN(k.v)}</div></div>))}
               </div>
               {filteredTransfers.length>0&&<div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:700,color:"#bbb",letterSpacing:1,marginBottom:8}}>TRASFERIMENTI</div>{filteredTransfers.map(tr=>(<div key={tr.id} style={{background:"#fff",borderRadius:14,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:6,boxShadow:"0 1px 6px #0001"}}><div style={{fontSize:20}}>🔄</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{accMap[tr.from_account_id]?.name} → {accMap[tr.to_account_id]?.name}</div><div style={{fontSize:11,color:"#bbb"}}>{tr.date}{tr.note&&` · ${tr.note}`}</div></div><div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700}}>{accMap[tr.from_account_id]?.currency} {fmtN(tr.amount_from)}</div><div style={{fontSize:11,color:"#bbb"}}>→ {accMap[tr.to_account_id]?.currency} {fmtN(tr.amount_to)}</div></div><button onClick={()=>del("transfers",tr.id)} style={{background:"#fff0f0",border:"none",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:13}}>🗑</button></div>))}</div>}
