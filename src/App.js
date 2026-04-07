@@ -81,22 +81,68 @@ const sb = {
   }),
 };
 
+// ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
+const T = {
+  // Brand
+  primary:   "#5b57ff",
+  primaryDk: "#4340d4",
+  primaryLt: "#ededff",
+  // Semantic
+  success:   "#22c55e",
+  danger:    "#ef4444",
+  warning:   "#f59e0b",
+  info:      "#06b6d4",
+  // Neutrals
+  gray50:    "#f9fafb",
+  gray100:   "#f3f4f6",
+  gray200:   "#e5e7eb",
+  gray300:   "#d1d5db",
+  gray400:   "#9ca3af",
+  gray500:   "#6b7280",
+  gray700:   "#374151",
+  gray900:   "#111827",
+  // Surfaces
+  bg:        "#f4f5f9",
+  surface:   "#ffffff",
+  sidebar:   "#0f1117",
+  sidebarActive: "#1c1f2e",
+};
+
 const AuthCtx = createContext(null);
 const useAuth = () => useContext(AuthCtx);
 
 const CSS = `
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-  *{box-sizing:border-box}
-  input,select,textarea{font-family:inherit}
-  input:focus,select:focus{outline:none;border-color:#6366f1!important;box-shadow:0 0 0 3px #6366f122}
-  button{font-family:inherit}
-  button:active{transform:scale(.97)}
-  ::-webkit-scrollbar{width:4px;height:4px}
-  ::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px}
-  .widget{animation:fadeUp .25s ease both}
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  @keyframes spin    { to { transform:rotate(360deg) } }
+  @keyframes fadeUp  { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+  @keyframes slideIn { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:none } }
+  @keyframes shimmer { from { background-position:-400px 0 } to { background-position:400px 0 } }
+  @keyframes pulse   { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+  * { box-sizing:border-box; margin:0; padding:0 }
+  html,body,#root { height:100% }
+  body { font-family:'Inter',system-ui,-apple-system,sans-serif; background:${T.bg}; color:${T.gray900}; -webkit-font-smoothing:antialiased }
+  input,select,textarea,button { font-family:inherit }
+  input:focus, select:focus, textarea:focus {
+    outline:none;
+    border-color:${T.primary} !important;
+    box-shadow:0 0 0 3px ${T.primary}22;
+  }
+  button { cursor:pointer }
+  button:active { transform:scale(.97) }
+  ::-webkit-scrollbar { width:5px; height:5px }
+  ::-webkit-scrollbar-thumb { background:${T.gray200}; border-radius:10px }
+  ::-webkit-scrollbar-track { background:transparent }
+  .widget { animation:fadeUp .2s ease both }
+  .skeleton {
+    background: linear-gradient(90deg,${T.gray100} 25%,${T.gray200} 50%,${T.gray100} 75%);
+    background-size:800px 100%;
+    animation:shimmer 1.4s infinite linear;
+    border-radius:8px;
+  }
+  a { color:${T.primary}; text-decoration:none }
+  ::selection { background:${T.primary}33 }
 `;
+
 
 // ─── EMOJI PICKER DATA ────────────────────────────────────────────────────────
 const EMOJI_GROUPS = {
@@ -174,65 +220,304 @@ const ColorPicker = React.memo(({ value, onChange }) => (
 ));
 
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
-const Toast = ({msg,ok}) => <div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",background:ok?"#1a1a2e":"#ef4444",borderRadius:10,padding:"10px 22px",fontSize:13,color:"#fff",zIndex:9999,animation:"fadeUp .2s ease",whiteSpace:"nowrap",boxShadow:"0 4px 20px #0004"}}>{msg}</div>;
+const Toast = ({msg,ok}) => (
+  <div style={{
+    position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",
+    background:ok?T.gray900:T.danger,
+    borderRadius:12,padding:"12px 20px",fontSize:13,color:"#fff",zIndex:9999,
+    animation:"fadeUp .2s ease",whiteSpace:"nowrap",
+    boxShadow:"0 8px 32px #00000033",
+    display:"flex",alignItems:"center",gap:8,
+    backdropFilter:"blur(8px)",
+  }}>
+    <span>{ok?"✓":"⚠"}</span>{msg}
+  </div>
+);
 
-const Modal = ({title,onClose,children,wide}) => (
-  <div style={{position:"fixed",inset:0,background:"#00000066",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:1000,padding:16}} onClick={onClose}>
-    <div style={{background:"#fff",borderRadius:24,padding:28,width:"100%",maxWidth:wide?680:480,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -4px 40px #0003",animation:"slideIn .25s ease"}} onClick={e=>e.stopPropagation()}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22}}>
-        <div style={{fontSize:16,fontWeight:800,color:"#1a1a2e"}}>{title}</div>
-        <button onClick={onClose} style={{background:"#f5f5f5",border:"none",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:16,color:"#999"}}>✕</button>
+const Modal = ({title,onClose,children,wide,noPad}) => (
+  <div style={{position:"fixed",inset:0,background:"#00000055",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:1000,padding:"0 0 0 0",backdropFilter:"blur(2px)"}} onClick={onClose}>
+    <div style={{
+      background:T.surface,borderRadius:"24px 24px 0 0",
+      padding:noPad?0:28,width:"100%",maxWidth:wide?720:500,
+      maxHeight:"94vh",overflowY:"auto",
+      boxShadow:"0 -4px 60px #0002",animation:"slideIn .22s ease",
+    }} onClick={e=>e.stopPropagation()}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:noPad?0:22,padding:noPad?"20px 20px 0":0}}>
+        <div style={{fontSize:16,fontWeight:700,color:T.gray900}}>{title}</div>
+        <button onClick={onClose} style={{background:T.gray100,border:"none",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:14,color:T.gray500,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
       </div>
       {children}
     </div>
   </div>
 );
 
-const Field = ({label,hint,children}) => (
+const Card = ({children,style={},onClick,className=""}) => (
+  <div className={className} onClick={onClick} style={{
+    background:T.surface,borderRadius:16,padding:20,
+    boxShadow:"0 1px 4px #0000000a, 0 4px 16px #0000000a",
+    border:`1px solid ${T.gray100}`,
+    cursor:onClick?"pointer":"default",
+    transition:"box-shadow .15s, transform .15s",
+    ...style
+  }}>{children}</div>
+);
+
+const Field = ({label,hint,error,children}) => (
   <div style={{marginBottom:16}}>
-    <div style={{fontSize:11,fontWeight:700,color:"#bbb",letterSpacing:1.2,marginBottom:7}}>{label}</div>
+    {label&&<div style={{fontSize:11,fontWeight:600,color:T.gray500,letterSpacing:"0.06em",marginBottom:6,textTransform:"uppercase"}}>{label}</div>}
     {children}
-    {hint&&<div style={{fontSize:11,color:"#bbb",marginTop:4}}>{hint}</div>}
+    {hint&&!error&&<div style={{fontSize:11,color:T.gray400,marginTop:4}}>{hint}</div>}
+    {error&&<div style={{fontSize:11,color:T.danger,marginTop:4}}>⚠ {error}</div>}
   </div>
 );
 
-const Inp = React.memo(({value,onChange,type="text",placeholder,style={}}) => (
-  <input type={type} value={value??""} onChange={onChange} placeholder={placeholder}
-    style={{width:"100%",border:"1.5px solid #eee",borderRadius:10,padding:"11px 14px",fontSize:14,color:"#1a1a2e",...style}}/>
+const Inp = React.memo(({value,onChange,type="text",placeholder,style={},autoFocus}) => (
+  <input autoFocus={autoFocus} type={type} value={value??""} onChange={onChange} placeholder={placeholder}
+    style={{width:"100%",border:`1.5px solid ${T.gray200}`,borderRadius:10,padding:"10px 14px",fontSize:14,color:T.gray900,background:"#fff",transition:"border-color .15s",...style}}/>
 ));
 
-const Sel = React.memo(({value,onChange,children}) => (
+const Sel = React.memo(({value,onChange,children,style={}}) => (
   <select value={value??""} onChange={onChange}
-    style={{width:"100%",border:"1.5px solid #eee",borderRadius:10,padding:"11px 36px 11px 14px",fontSize:14,background:"#fff",color:"#1a1a2e",cursor:"pointer",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center"}}>
+    style={{width:"100%",border:`1.5px solid ${T.gray200}`,borderRadius:10,padding:"10px 36px 10px 14px",fontSize:14,background:"#fff",color:T.gray900,appearance:"none",
+    backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")",
+    backgroundRepeat:"no-repeat",backgroundPosition:"right 12px center",transition:"border-color .15s",...style}}>
     {children}
   </select>
 ));
 
-const Btn = ({onClick,label,color="#6366f1",outline,disabled,small}) => (
-  <button onClick={onClick} disabled={disabled}
-    style={{width:"100%",padding:small?"10px 0":"13px 0",background:disabled?"#f0f0f0":outline?"transparent":`linear-gradient(135deg,${color},${color}cc)`,border:outline?`1.5px solid ${color}`:"none",borderRadius:12,color:disabled?"#bbb":outline?color:"#fff",fontWeight:700,fontSize:small?13:14,cursor:disabled?"not-allowed":"pointer",boxShadow:(!outline&&!disabled)?`0 4px 20px ${color}33`:"none",transition:"all .2s"}}>{label}</button>
-);
+const Btn = ({onClick,label,color,outline,disabled,small,full=true,icon}) => {
+  const bg = color||T.primary;
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      width:full?"100%":"auto",
+      padding:small?"9px 16px":"12px 20px",
+      background:disabled?T.gray100:outline?"transparent":`linear-gradient(135deg,${bg},${bg}dd)`,
+      border:outline?`1.5px solid ${disabled?T.gray200:bg}`:"none",
+      borderRadius:11,
+      color:disabled?T.gray400:outline?bg:"#fff",
+      fontWeight:600,fontSize:small?13:14,
+      cursor:disabled?"not-allowed":"pointer",
+      boxShadow:(!outline&&!disabled)?`0 2px 12px ${bg}44`:"none",
+      display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+      transition:"all .15s",
+    }}>
+      {icon&&<span style={{fontSize:15}}>{icon}</span>}{label}
+    </button>
+  );
+};
 
 const TabSwitch = ({tabs,value,onChange}) => (
-  <div style={{display:"flex",background:"#f5f5f5",borderRadius:12,padding:3,marginBottom:16}}>
+  <div style={{display:"flex",background:T.gray100,borderRadius:10,padding:3,marginBottom:16}}>
     {tabs.map(([v,l])=>(
-      <button key={v} onClick={()=>onChange(v)} style={{flex:1,padding:"9px 0",border:"none",borderRadius:9,background:value===v?"#fff":"transparent",color:value===v?"#1a1a2e":"#bbb",fontWeight:value===v?700:400,fontSize:13,cursor:"pointer",boxShadow:value===v?"0 1px 6px #0001":"none",transition:"all .2s"}}>{l}</button>
+      <button key={v} onClick={()=>onChange(v)} style={{
+        flex:1,padding:"8px 0",border:"none",borderRadius:8,
+        background:value===v?T.surface:"transparent",
+        color:value===v?T.gray900:T.gray400,
+        fontWeight:value===v?600:400,fontSize:13,cursor:"pointer",
+        boxShadow:value===v?"0 1px 4px #0000000f":"none",transition:"all .15s"
+      }}>{l}</button>
     ))}
   </div>
 );
 
+const Badge = ({label,color=T.primary}) => (
+  <span style={{display:"inline-block",padding:"2px 8px",borderRadius:20,background:color+"18",color,fontSize:11,fontWeight:600}}>{label}</span>
+);
+
+// ─── SKELETON LOADER ──────────────────────────────────────────────────────────
+const Skeleton = ({w="100%",h=16,r=8,style={}}) => (
+  <div className="skeleton" style={{width:w,height:h,borderRadius:r,...style}}/>
+);
+
+const SkeletonCard = () => (
+  <Card style={{display:"flex",flexDirection:"column",gap:12}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <Skeleton w={120} h={14}/>
+      <Skeleton w={60} h={20} r={20}/>
+    </div>
+    <Skeleton w="100%" h={36} r={10}/>
+    <Skeleton w="70%" h={12}/>
+  </Card>
+);
+
+const SkeletonDashboard = () => (
+  <div style={{display:"flex",flexDirection:"column",gap:16}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      <SkeletonCard/><SkeletonCard/>
+    </div>
+    <Card style={{height:160,display:"flex",flexDirection:"column",gap:12}}>
+      <Skeleton w={140} h={14}/><Skeleton w="100%" h={100} r={10}/>
+    </Card>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+      <SkeletonCard/><SkeletonCard/><SkeletonCard/>
+    </div>
+  </div>
+);
+
+// ─── EMPTY STATES ─────────────────────────────────────────────────────────────
+const EmptyState = ({icon,title,desc,action,actionLabel}) => (
+  <div style={{textAlign:"center",padding:"48px 24px",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+    <div style={{width:64,height:64,borderRadius:20,background:T.primaryLt,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,marginBottom:4}}>{icon}</div>
+    <div style={{fontSize:15,fontWeight:700,color:T.gray900}}>{title}</div>
+    <div style={{fontSize:13,color:T.gray400,maxWidth:260,lineHeight:1.6}}>{desc}</div>
+    {action&&<button onClick={action} style={{marginTop:8,padding:"10px 20px",background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,border:"none",borderRadius:10,color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",boxShadow:`0 2px 12px ${T.primary}44`}}>{actionLabel}</button>}
+  </div>
+);
+
+// ─── ONBOARDING WIZARD ────────────────────────────────────────────────────────
+const OnboardingWizard = ({ user, token, onComplete }) => {
+  const t = sb.db(token);
+  const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [acc, setAcc] = useState({ name:"Conto Principale", currency:"EUR", icon:"🏦", color:T.primary });
+  const [acc2, setAcc2] = useState({ name:"", currency:"CHF", icon:"🇨🇭", color:"#10b981", enabled:false });
+  const [cats] = useState([
+    {name:"Casa",icon:"🏠",color:"#f59e0b"},
+    {name:"Trasporti",icon:"🚗",color:"#3b82f6"},
+    {name:"Cibo & Spesa",icon:"🛒",color:"#10b981"},
+    {name:"Salute",icon:"🏥",color:"#ef4444"},
+    {name:"Svago",icon:"🎮",color:"#8b5cf6"},
+    {name:"Abbonamenti",icon:"📱",color:"#06b6d4"},
+    {name:"Istruzione",icon:"🎓",color:"#f97316"},
+    {name:"Famiglia",icon:"👨‍👩‍👧",color:"#ec4899"},
+  ]);
+
+  const finish = async () => {
+    setSaving(true);
+    try {
+      // Create primary account
+      await t("accounts").post({user_id:user.id,name:acc.name,currency:acc.currency,color:acc.color,icon:acc.icon,balance_initial:0});
+      // Create second account if enabled
+      if(acc2.enabled && acc2.name) {
+        await t("accounts").post({user_id:user.id,name:acc2.name,currency:acc2.currency,color:acc2.color,icon:acc2.icon,balance_initial:0});
+      }
+      // Create default categories
+      for(const cat of cats) {
+        await t("categories").post({user_id:user.id,...cat,budget:0});
+      }
+      // Mark onboarded
+      await t("user_preferences").upsert({user_id:user.id,dashboard_widgets:DEFAULT_WIDGETS,saved_reports:[],onboarded:true});
+      onComplete();
+    } catch(e) { console.error(e); }
+    setSaving(false);
+  };
+
+  const steps = [
+    {
+      title:"Benvenuto in Fina 👋",
+      desc:"Configuriamo il tuo spazio in 2 minuti. Iniziamo con i tuoi conti.",
+      content:(
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div style={{background:T.gray50,borderRadius:14,padding:18}}>
+            <div style={{fontSize:13,fontWeight:600,color:T.gray700,marginBottom:14}}>Conto principale</div>
+            <Field label="NOME"><Inp value={acc.name} onChange={e=>setAcc(a=>({...a,name:e.target.value}))} placeholder="Es. Conto UBS, Conto Corrente..."/></Field>
+            <Field label="VALUTA">
+              <div style={{display:"flex",gap:8}}>
+                {[["EUR","€ Euro"],["CHF","CHF Franco"],["USD","$ Dollaro"],["GBP","£ Sterlina"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setAcc(a=>({...a,currency:v}))} style={{flex:1,padding:"9px 0",border:`1.5px solid ${acc.currency===v?T.primary:T.gray200}`,borderRadius:10,background:acc.currency===v?T.primaryLt:"#fff",color:acc.currency===v?T.primary:T.gray500,fontWeight:600,fontSize:12,cursor:"pointer"}}>{l}</button>
+                ))}
+              </div>
+            </Field>
+          </div>
+          <div style={{background:T.gray50,borderRadius:14,padding:18}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:acc2.enabled?14:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:T.gray700}}>Secondo conto (opzionale)</div>
+              <button onClick={()=>setAcc2(a=>({...a,enabled:!a.enabled}))} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${acc2.enabled?T.primary:T.gray200}`,background:acc2.enabled?T.primaryLt:"#fff",color:acc2.enabled?T.primary:T.gray500,fontSize:12,fontWeight:600}}>
+                {acc2.enabled?"✓ Attivo":"+ Aggiungi"}
+              </button>
+            </div>
+            {acc2.enabled&&(
+              <div style={{marginTop:14}}>
+                <Field label="NOME"><Inp value={acc2.name} onChange={e=>setAcc2(a=>({...a,name:e.target.value}))} placeholder="Es. Conto Svizzera..."/></Field>
+                <Field label="VALUTA">
+                  <div style={{display:"flex",gap:8}}>
+                    {[["CHF","CHF"],["EUR","EUR"],["USD","USD"],["GBP","GBP"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setAcc2(a=>({...a,currency:v}))} style={{flex:1,padding:"9px 0",border:`1.5px solid ${acc2.currency===v?T.primary:T.gray200}`,borderRadius:10,background:acc2.currency===v?T.primaryLt:"#fff",color:acc2.currency===v?T.primary:T.gray500,fontWeight:600,fontSize:12,cursor:"pointer"}}>{l}</button>
+                    ))}
+                  </div>
+                </Field>
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title:"Categorie di spesa 🏷️",
+      desc:"Abbiamo preselezionato le categorie più comuni. Potrai personalizzarle in seguito.",
+      content:(
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {cats.map(cat=>(
+              <div key={cat.name} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:cat.color+"10",borderRadius:12,border:`1px solid ${cat.color}22`}}>
+                <div style={{width:32,height:32,borderRadius:10,background:cat.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{cat.icon}</div>
+                <span style={{fontSize:13,fontWeight:500,color:T.gray700}}>{cat.name}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{background:T.primaryLt,borderRadius:12,padding:"12px 16px",marginTop:16,fontSize:12,color:T.primary}}>
+            ℹ️ Verranno create 8 categorie di default. Puoi aggiungerne altre o modificarle da Impostazioni.
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const current = steps[step];
+
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,#0f1117 0%,#1c1f2e 60%,#16213e 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <style>{CSS}</style>
+      <div style={{width:"100%",maxWidth:520}}>
+        {/* Logo */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:12,marginBottom:8}}>
+            <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💼</div>
+            <div style={{fontSize:22,fontWeight:800,color:"#fff",letterSpacing:-0.5}}>Fina</div>
+          </div>
+          <div style={{fontSize:12,color:"#ffffff44"}}>Il tuo budget familiare in un unico posto</div>
+        </div>
+
+        {/* Progress */}
+        <div style={{display:"flex",gap:6,marginBottom:24}}>
+          {steps.map((_,i)=>(
+            <div key={i} style={{flex:1,height:3,borderRadius:3,background:i<=step?T.primary:"#ffffff22",transition:"background .3s"}}/>
+          ))}
+        </div>
+
+        {/* Card */}
+        <div style={{background:T.surface,borderRadius:24,padding:28,boxShadow:"0 20px 80px #00000044"}}>
+          <div style={{fontSize:20,fontWeight:800,color:T.gray900,marginBottom:6}}>{current.title}</div>
+          <div style={{fontSize:13,color:T.gray400,marginBottom:24,lineHeight:1.6}}>{current.desc}</div>
+          {current.content}
+          <div style={{display:"flex",gap:10,marginTop:24}}>
+            {step>0&&<Btn onClick={()=>setStep(s=>s-1)} label="← Indietro" outline full={false} style={{flex:1}}/>}
+            {step<steps.length-1
+              ? <Btn onClick={()=>setStep(s=>s+1)} label="Avanti →" color={T.primary} style={{flex:1}}/>
+              : <Btn onClick={finish} disabled={saving} label={saving?"Configurazione...":"🚀 Inizia ora"} color={T.primary}/>
+            }
+          </div>
+        </div>
+        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#ffffff22"}}>I tuoi dati sono protetti e isolati. Powered by Supabase.</div>
+      </div>
+    </div>
+  );
+};
+
+
 // ─── CHARTS ──────────────────────────────────────────────────────────────────
 const DonutChart = ({data,size=180,centerLabel,centerValue}) => {
   const total=data.reduce((s,d)=>s+Math.abs(d.value),0);
-  if(!total) return <div style={{width:size,height:size,borderRadius:"50%",background:"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",color:"#ccc",fontSize:12}}>Nessun dato</div>;
+  if(!total) return <div style={{width:size,height:size,borderRadius:"50%",background:T.gray100,display:"flex",alignItems:"center",justifyContent:"center",color:T.gray300,fontSize:12}}>Nessun dato</div>;
   let cum=0; const r=size/2-10,cx=size/2,cy=size/2;
   const slices=data.map(d=>{const pct=Math.abs(d.value)/total,s=cum*2*Math.PI-Math.PI/2;cum+=pct;const e=cum*2*Math.PI-Math.PI/2;return{...d,path:`M ${cx} ${cy} L ${cx+r*Math.cos(s)} ${cy+r*Math.sin(s)} A ${r} ${r} 0 ${pct>.5?1:0} 1 ${cx+r*Math.cos(e)} ${cy+r*Math.sin(e)} Z`};});
-  return (<svg width={size} height={size}>{slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={2}/>)}<circle cx={cx} cy={cy} r={r*.58} fill="#fff"/>{centerLabel&&<text x={cx} y={cy-8} textAnchor="middle" fontSize={10} fill="#999">{centerLabel}</text>}{centerValue&&<text x={cx} y={cy+10} textAnchor="middle" fontSize={13} fontWeight={700} fill="#1a1a2e">{centerValue}</text>}</svg>);
+  return (<svg width={size} height={size}>{slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth={2.5}/>)}<circle cx={cx} cy={cy} r={r*.58} fill="#fff"/>{centerLabel&&<text x={cx} y={cy-8} textAnchor="middle" fontSize={10} fill={T.gray400}>{centerLabel}</text>}{centerValue&&<text x={cx} y={cy+10} textAnchor="middle" fontSize={14} fontWeight={700} fill={T.gray900}>{centerValue}</text>}</svg>);
 };
 
-const BarChart = ({data,color="#6366f1"}) => {
+const BarChart = ({data,color}) => {
+  const c=color||T.primary;
   const max=Math.max(...data.map(d=>Math.abs(d.value)),1);
-  return (<div style={{display:"flex",alignItems:"flex-end",gap:5,height:80}}>{data.map((d,i)=>(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:"100%",background:`${color}18`,borderRadius:"4px 4px 0 0",height:64,display:"flex",alignItems:"flex-end"}}><div style={{width:"100%",height:`${(Math.abs(d.value)/max)*100}%`,background:`linear-gradient(180deg,${color},${color}88)`,borderRadius:"4px 4px 0 0",transition:"height .5s ease"}}/></div><div style={{fontSize:9,color:"#bbb",whiteSpace:"nowrap"}}>{d.label}</div></div>))}</div>);
+  return (<div style={{display:"flex",alignItems:"flex-end",gap:4,height:80}}>{data.map((d,i)=>(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:"100%",background:c+"12",borderRadius:"4px 4px 0 0",height:64,display:"flex",alignItems:"flex-end"}}><div style={{width:"100%",height:`${(Math.abs(d.value)/max)*100}%`,background:`linear-gradient(180deg,${c},${c}88)`,borderRadius:"4px 4px 0 0",transition:"height .5s ease"}}/></div><div style={{fontSize:9,color:T.gray300,whiteSpace:"nowrap"}}>{d.label}</div></div>))}</div>);
 };
 
 // ─── MODAL FORMS (own local state = no focus loss) ────────────────────────────
@@ -1017,165 +1302,349 @@ const MiniTrendWidget = ({ transactions, filterMonth, filterYear, isMobile }) =>
 };
 
 // ─── GROUP C: FORECAST PAGE ───────────────────────────────────────────────────
-const ForecastPage = ({ fixedTx, accounts, categories, accMap, catMap, token, user, filterYear, isMobile, showToast }) => {
+const ForecastPage = ({ fixedTx, accounts, categories, variableTx, accMap, catMap, token, user, filterYear, isMobile, showToast }) => {
   const t = useMemo(()=>sb.db(token),[token]);
-  const [horizon, setHorizon] = useState(3);
+  const [horizon, setHorizon] = useState(6);
+  const [view, setView] = useState("aggregate"); // "aggregate" | account id
   const [confirmations, setConfirmations] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(()=>{
-    t("fixed_confirmations").get(`user_id=eq.${user?.id}&year=eq.${filterYear}&order=month`).then(r=>{
+    t("fixed_confirmations").get(`user_id=eq.${user?.id}&order=year,month`).then(r=>{
       if(!Array.isArray(r)) return;
       const map = {};
       r.forEach(c=>{ map[`${c.transaction_id}_${c.month}_${c.year}`]=c; });
       setConfirmations(map);
     });
-  },[t,user,filterYear]);
-
-  const months = useMemo(()=>{
-    const today = new Date();
-    return Array.from({length:horizon},(_,i)=>{
-      const d = new Date(today.getFullYear(), today.getMonth()+i, 1);
-      return { month: MONTHS[d.getMonth()], year: d.getFullYear(), idx: d.getMonth() };
-    });
-  },[horizon]);
+  },[t,user]);
 
   const getKey = (txId, month, year) => `${txId}_${month}_${year}`;
-  const isConfirmed = (txId, month, year) => !!confirmations[getKey(txId, month, year)]?.confirmed;
-  const getActual = (txId, month, year) => confirmations[getKey(txId, month, year)]?.actual_amount;
+  const isConfirmed = (txId, month, year) => !!confirmations[getKey(txId,month,year)]?.confirmed;
+
+  // Build month range: last 3 actual months + next `horizon` months
+  const monthRange = useMemo(()=>{
+    const today = new Date();
+    const result = [];
+    for(let i=-3; i<horizon; i++){
+      const d = new Date(today.getFullYear(), today.getMonth()+i, 1);
+      result.push({
+        month: MONTHS[d.getMonth()],
+        monthShort: MONTHS_SHORT[d.getMonth()],
+        year: d.getFullYear(),
+        isFuture: i >= 0,
+        isToday: i === 0,
+      });
+    }
+    return result;
+  },[horizon]);
+
+  // For a given account (or all), compute income/expense/net per month
+  const computeSeries = useCallback((accId)=>{
+    return monthRange.map(({month,year,isFuture})=>{
+      const txFilter = accId==="all" ? fixedTx : fixedTx.filter(tx=>tx.account_id===accId);
+      const income = txFilter.filter(tx=>tx.type==="income").reduce((s,tx)=>{
+        const conf = confirmations[getKey(tx.id,month,year)];
+        return s+(conf?.confirmed ? Number(conf.actual_amount??tx.amount) : Number(tx.amount));
+      },0);
+      const expense = txFilter.filter(tx=>tx.type==="expense").reduce((s,tx)=>{
+        const conf = confirmations[getKey(tx.id,month,year)];
+        return s+(conf?.confirmed ? Number(conf.actual_amount??tx.amount) : Number(tx.amount));
+      },0);
+      // Add variable (historical only)
+      const varTx = accId==="all" ? variableTx : variableTx.filter(tx=>tx.account_id===accId);
+      const varInc = isFuture ? 0 : varTx.filter(tx=>{const d=new Date(tx.date);return MONTHS[d.getMonth()]===month&&d.getFullYear()===year&&tx.type==="income";}).reduce((s,tx)=>s+Number(tx.amount),0);
+      const varExp = isFuture ? 0 : varTx.filter(tx=>{const d=new Date(tx.date);return MONTHS[d.getMonth()]===month&&d.getFullYear()===year&&tx.type==="expense";}).reduce((s,tx)=>s+Number(tx.amount),0);
+      return {
+        label: MONTHS_SHORT[MONTHS.indexOf(month)],
+        month, year, isFuture,
+        income: income+varInc,
+        expense: expense+varExp,
+        net: (income+varInc)-(expense+varExp),
+      };
+    });
+  },[monthRange, fixedTx, variableTx, confirmations]);
+
+  const activeSeries = useMemo(()=>computeSeries(view),[computeSeries,view]);
+
+  // SVG multi-line chart with zero-line, gradient fill, dotted forecast area
+  const MultiLineChart = ({ series, height=220 }) => {
+    if(!series.length) return null;
+    const W=600, H=height, PAD={t:20,r:20,b:36,l:56};
+    const chartW=W-PAD.l-PAD.r, chartH=H-PAD.t-PAD.b;
+    const allVals=[...series.map(d=>d.income),...series.map(d=>d.expense),...series.map(d=>d.net),0];
+    const maxV=Math.max(...allVals)*1.1||1;
+    const minV=Math.min(...allVals,0)*1.1||0;
+    const rangeV=maxV-minV||1;
+    const xOf=i=>(i/(series.length-1||1))*chartW;
+    const yOf=v=>chartH-(((v-minV)/rangeV)*chartH);
+    const linePath=(key)=>series.map((d,i)=>`${i===0?"M":"L"}${xOf(i)},${yOf(d[key])}`).join(" ");
+    const areaPath=(key,base=0)=>`${series.map((d,i)=>`${i===0?"M":"L"}${xOf(i)},${yOf(d[key])}`).join(" ")} L${xOf(series.length-1)},${yOf(base)} L${xOf(0)},${yOf(base)} Z`;
+    const zeroY=yOf(0);
+    // Find split index (past → future)
+    const splitIdx=series.findIndex(d=>d.isFuture);
+
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height}} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="fc_inc" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.2"/>
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0"/>
+          </linearGradient>
+          <linearGradient id="fc_exp" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.15"/>
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0"/>
+          </linearGradient>
+          <linearGradient id="fc_net_pos" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25"/>
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0"/>
+          </linearGradient>
+          <clipPath id="past_clip">
+            <rect x="0" y="0" width={splitIdx>=0?xOf(splitIdx):chartW} height={chartH}/>
+          </clipPath>
+          <clipPath id="future_clip">
+            <rect x={splitIdx>=0?xOf(splitIdx):chartW} y="0" width={chartW} height={chartH}/>
+          </clipPath>
+        </defs>
+
+        <g transform={`translate(${PAD.l},${PAD.t})`}>
+          {/* Grid lines */}
+          {[0,0.25,0.5,0.75,1].map(f=>{
+            const y=f*chartH;
+            const val=maxV-(f*rangeV);
+            return <g key={f}>
+              <line x1={0} y1={y} x2={chartW} y2={y} stroke="#f0f0f0" strokeWidth={1}/>
+              <text x={-6} y={y+4} textAnchor="end" fontSize={9} fill="#bbb">{fmtN(val,0)}</text>
+            </g>;
+          })}
+
+          {/* Zero line */}
+          {minV<0&&<line x1={0} y1={zeroY} x2={chartW} y2={zeroY} stroke="#ddd" strokeWidth={1} strokeDasharray="4,2"/>}
+
+          {/* Future shading */}
+          {splitIdx>=0&&<rect x={xOf(splitIdx)} y={0} width={chartW-xOf(splitIdx)} height={chartH} fill="#f8f9ff" opacity={0.7}/>}
+
+          {/* Area fills */}
+          <path d={areaPath("income")} fill="url(#fc_inc)" opacity={0.8}/>
+          <path d={areaPath("expense")} fill="url(#fc_exp)" opacity={0.8}/>
+
+          {/* Lines - solid for past, dashed for future */}
+          {["income","expense","net"].map((key,ki)=>{
+            const colors=["#10b981","#ef4444","#6366f1"];
+            const c=colors[ki];
+            return <g key={key}>
+              {/* Past solid */}
+              <path d={linePath(key)} fill="none" stroke={c} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" clipPath="url(#past_clip)"/>
+              {/* Future dashed */}
+              <path d={linePath(key)} fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6,4" clipPath="url(#future_clip)" opacity={0.7}/>
+            </g>;
+          })}
+
+          {/* Data points */}
+          {series.map((d,i)=>{
+            const netColor=d.net>=0?"#6366f1":"#ef4444";
+            return <g key={i}>
+              <circle cx={xOf(i)} cy={yOf(d.income)} r={3} fill="#10b981" stroke="#fff" strokeWidth={1.5}/>
+              <circle cx={xOf(i)} cy={yOf(d.expense)} r={3} fill="#ef4444" stroke="#fff" strokeWidth={1.5}/>
+              <circle cx={xOf(i)} cy={yOf(d.net)} r={d.isFuture?5:4} fill={netColor} stroke="#fff" strokeWidth={2}/>
+            </g>;
+          })}
+
+          {/* X axis labels */}
+          {series.map((d,i)=>(
+            <text key={i} x={xOf(i)} y={chartH+20} textAnchor="middle" fontSize={9} fill={d.isFuture?"#6366f1":"#bbb"} fontWeight={d.isToday?700:400}>
+              {d.monthShort}{d.year!==new Date().getFullYear()?`'${String(d.year).slice(2)}`:""}
+            </text>
+          ))}
+
+          {/* "Forecast →" label */}
+          {splitIdx>=0&&<text x={xOf(splitIdx)+4} y={-6} fontSize={9} fill="#6366f1" fontWeight={700}>Forecast →</text>}
+          {splitIdx>0&&<text x={xOf(splitIdx)-4} y={-6} fontSize={9} fill="#bbb" textAnchor="end">← Storico</text>}
+
+          {/* Vertical split line */}
+          {splitIdx>=0&&<line x1={xOf(splitIdx)} y1={-10} x2={xOf(splitIdx)} y2={chartH} stroke="#6366f1" strokeWidth={1} strokeDasharray="4,3" opacity={0.5}/>}
+        </g>
+      </svg>
+    );
+  };
 
   const confirmFixed = async (tx, month, year) => {
     const key = getKey(tx.id, month, year);
     const existing = confirmations[key];
-    const payload = {
-      user_id: user.id, transaction_id: tx.id,
-      month, year, confirmed: true,
+    const payload = { user_id:user.id, transaction_id:tx.id, month, year, confirmed:true,
       actual_amount: existing?.actual_amount ?? Number(tx.amount),
-      confirmed_at: new Date().toISOString(),
-    };
+      confirmed_at: new Date().toISOString() };
     setLoading(true);
-    if (existing?.id) {
-      await t("fixed_confirmations").patch({...payload},`id=eq.${existing.id}`);
+    if(existing?.id){
+      await t("fixed_confirmations").patch(payload,`id=eq.${existing.id}`);
       setConfirmations(c=>({...c,[key]:{...existing,...payload}}));
     } else {
       const res = await t("fixed_confirmations").post(payload);
       const newC = Array.isArray(res)?res[0]:res;
       if(newC?.id) setConfirmations(c=>({...c,[key]:newC}));
     }
-    setLoading(false);
-    showToast("Confermato ✓");
+    setLoading(false); showToast("Confermato ✓");
   };
 
   const updateActual = async (tx, month, year, val) => {
-    const key = getKey(tx.id, month, year);
+    const key = getKey(tx.id,month,year);
     const existing = confirmations[key];
     if(!existing?.id) return;
     await t("fixed_confirmations").patch({actual_amount:parseFloat(val)},`id=eq.${existing.id}`);
     setConfirmations(c=>({...c,[key]:{...existing,actual_amount:parseFloat(val)}}));
   };
 
-  const forecastByMonth = useMemo(()=>months.map(({month,year})=>{
-    const income = fixedTx.filter(tx=>tx.type==="income").reduce((s,tx)=>{
-      const conf = confirmations[getKey(tx.id,month,year)];
-      return s + (conf?.confirmed ? Number(conf.actual_amount??tx.amount) : Number(tx.amount));
-    },0);
-    const expense = fixedTx.filter(tx=>tx.type==="expense").reduce((s,tx)=>{
-      const conf = confirmations[getKey(tx.id,month,year)];
-      return s + (conf?.confirmed ? Number(conf.actual_amount??tx.amount) : Number(tx.amount));
-    },0);
-    const confirmed_count = fixedTx.filter(tx=>isConfirmed(tx.id,month,year)).length;
-    return {month,year,income,expense,net:income-expense,total:fixedTx.length,confirmed:confirmed_count};
-  }),[months,fixedTx,confirmations]);
+  // KPI cards
+  const kpis = useMemo(()=>{
+    const future = activeSeries.filter(d=>d.isFuture);
+    const past   = activeSeries.filter(d=>!d.isFuture);
+    return {
+      avgFutureNet: future.length ? future.reduce((s,d)=>s+d.net,0)/future.length : 0,
+      totalFutureExp: future.reduce((s,d)=>s+d.expense,0),
+      totalFutureInc: future.reduce((s,d)=>s+d.income,0),
+      avgPastNet: past.length ? past.reduce((s,d)=>s+d.net,0)/past.length : 0,
+    };
+  },[activeSeries]);
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      {/* Header */}
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+      {/* Header + controls */}
       <div style={{background:"linear-gradient(135deg,#1a1a2e,#16213e)",borderRadius:20,padding:"20px 22px",color:"#fff"}}>
-        <div style={{fontSize:13,fontWeight:900,marginBottom:6}}>🔮 Forecast Entrate & Uscite Fisse</div>
-        <div style={{fontSize:12,color:"#ffffff66",marginBottom:14}}>Le voci non confermate sono previsioni. Confermale mese per mese quando si verificano.</div>
-        <div style={{display:"flex",gap:6}}>
-          {[3,6,12].map(h=>(
-            <button key={h} onClick={()=>setHorizon(h)} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${horizon===h?"#a78bfa":"#ffffff33"}`,background:horizon===h?"#6366f133":"transparent",color:horizon===h?"#a78bfa":"#ffffff99",fontSize:12,cursor:"pointer",fontWeight:horizon===h?700:400}}>
-              {h} mesi
-            </button>
-          ))}
+        <div style={{fontSize:15,fontWeight:900,marginBottom:4}}>🔮 Forecast Finanziario</div>
+        <div style={{fontSize:12,color:"#ffffff55",marginBottom:16}}>Linee continue = storico · linee tratteggiate = previsione basata sulle voci fisse</div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:4}}>
+            {[3,6,12].map(h=>(
+              <button key={h} onClick={()=>setHorizon(h)} style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${horizon===h?"#a78bfa":"#ffffff22"}`,background:horizon===h?"#6366f144":"transparent",color:horizon===h?"#a78bfa":"#ffffff66",fontSize:12,cursor:"pointer",fontWeight:horizon===h?700:400}}>
+                +{h} mesi
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Summary timeline */}
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)",gap:10}}>
-        {forecastByMonth.map(fm=>(
-          <div key={`${fm.month}${fm.year}`} style={{background:"#fff",borderRadius:16,padding:16,boxShadow:"0 2px 8px #0001",borderLeft:`4px solid ${fm.net>=0?"#10b981":"#ef4444"}`}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>{fm.month} {fm.year}</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:4}}>↑ Entrate: <strong style={{color:"#10b981"}}>{fmtN(fm.income)}</strong></div>
-            <div style={{fontSize:11,color:"#999",marginBottom:8}}>↓ Uscite: <strong style={{color:"#ef4444"}}>{fmtN(fm.expense)}</strong></div>
-            <div style={{fontSize:14,fontWeight:800,color:fm.net>=0?"#10b981":"#ef4444"}}>{fm.net>=0?"+":""}{fmtN(fm.net)} netto</div>
-            <div style={{fontSize:10,color:"#bbb",marginTop:6}}>
-              {fm.confirmed}/{fm.total} voci confermate
-              <div style={{background:"#f5f5f5",borderRadius:4,height:4,marginTop:4,overflow:"hidden"}}>
-                <div style={{width:`${fm.total>0?(fm.confirmed/fm.total)*100:0}%`,height:"100%",background:"#6366f1",borderRadius:4}}/>
+      {/* View selector (aggregate + per account) */}
+      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+        <button onClick={()=>setView("all")} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${view==="all"?"#6366f1":"#eee"}`,background:view==="all"?"#6366f111":"#fff",color:view==="all"?"#6366f1":"#666",fontWeight:view==="all"?700:400,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+          🌐 Aggregato
+        </button>
+        {accounts.map(acc=>(
+          <button key={acc.id} onClick={()=>setView(acc.id)} style={{padding:"8px 14px",borderRadius:20,border:`1.5px solid ${view===acc.id?acc.color:"#eee"}`,background:view===acc.id?acc.color+"11":"#fff",color:view===acc.id?acc.color:"#666",fontWeight:view===acc.id?700:400,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+            {acc.icon} {acc.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Main chart */}
+      <div style={{background:"#fff",borderRadius:20,padding:isMobile?"14px":"20px",boxShadow:"0 2px 16px #0001"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>
+            {view==="all"?"Tutti i Conti":accounts.find(a=>a.id===view)?.name||""}
+          </div>
+          {/* Legend */}
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+            {[["#10b981","Entrate"],["#ef4444","Uscite"],["#6366f1","Netto"]].map(([c,l])=>(
+              <div key={l} style={{display:"flex",alignItems:"center",gap:5}}>
+                <svg width={24} height={10}><line x1={0} y1={5} x2={10} y2={5} stroke={c} strokeWidth={2}/><line x1={14} y1={5} x2={24} y2={5} stroke={c} strokeWidth={2} strokeDasharray="3,2" opacity={0.7}/></svg>
+                <span style={{fontSize:11,color:"#666"}}>{l}</span>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+        <MultiLineChart series={activeSeries} height={isMobile?180:240}/>
+      </div>
+
+      {/* KPI strip */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+        {[
+          {l:"Entrate previste",v:kpis.totalFutureInc,c:"#10b981",icon:"↑"},
+          {l:"Uscite previste",v:kpis.totalFutureExp,c:"#ef4444",icon:"↓"},
+          {l:"Netto medio/mese (forecast)",v:kpis.avgFutureNet,c:kpis.avgFutureNet>=0?"#6366f1":"#ef4444",icon:"≈"},
+          {l:"Netto medio/mese (storico)",v:kpis.avgPastNet,c:kpis.avgPastNet>=0?"#10b981":"#ef4444",icon:"📊"},
+        ].map(k=>(
+          <div key={k.l} style={{background:"#fff",borderRadius:14,padding:14,boxShadow:"0 2px 8px #0001"}}>
+            <div style={{fontSize:10,color:"#bbb",marginBottom:4}}>{k.l}</div>
+            <div style={{fontSize:18,fontWeight:900,color:k.c}}>{k.icon} {fmtN(Math.abs(k.v))}</div>
           </div>
         ))}
       </div>
 
-      {/* Per-account forecast */}
-      {accounts.map(acc=>(
-        <div key={acc.id} style={{background:"#fff",borderRadius:18,boxShadow:"0 2px 12px #0001",overflow:"hidden",borderLeft:`4px solid ${acc.color}`}}>
-          <div style={{padding:"14px 18px",background:acc.color+"11",display:"flex",alignItems:"center",gap:12}}>
-            <div style={{fontSize:22}}>{acc.icon}</div>
-            <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{acc.name} ({acc.currency})</div>
-          </div>
-
-          {months.map(({month,year})=>{
-            const monthFixed = fixedTx.filter(tx=>tx.account_id===acc.id);
-            if(!monthFixed.length) return null;
+      {/* Per-account mini charts (only in aggregate view) */}
+      {view==="all"&&accounts.length>1&&(
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+          {accounts.map(acc=>{
+            const s=computeSeries(acc.id);
+            const futureNet=s.filter(d=>d.isFuture).reduce((sum,d)=>sum+d.net,0);
             return (
-              <div key={`${month}${year}`} style={{borderTop:"1px solid #f5f5f5"}}>
-                <div style={{padding:"10px 18px",background:"#f8f9fc",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{month} {year}</span>
-                  <span style={{fontSize:11,color:"#bbb"}}>{monthFixed.filter(tx=>isConfirmed(tx.id,month,year)).length}/{monthFixed.length} confermati</span>
+              <div key={acc.id} style={{background:"#fff",borderRadius:16,padding:16,boxShadow:"0 2px 8px #0001",borderLeft:`4px solid ${acc.color}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#1a1a2e"}}>{acc.icon} {acc.name}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:futureNet>=0?"#10b981":"#ef4444"}}>{futureNet>=0?"+":""}{fmtN(futureNet)}</div>
                 </div>
-                {monthFixed.map(tx=>{
-                  const key = getKey(tx.id,month,year);
-                  const conf = confirmations[key];
-                  const confirmed = conf?.confirmed;
-                  const cat = catMap[tx.category_id];
-                  return (
-                    <div key={tx.id} style={{padding:"10px 18px",display:"flex",alignItems:"center",gap:10,borderTop:"1px solid #f9f9f9"}}>
-                      <div style={{width:32,height:32,borderRadius:10,background:cat?.color+"22"||"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{cat?.icon||"📌"}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:600,color:confirmed?"#1a1a2e":"#999"}}>{tx.name}</div>
-                        <div style={{fontSize:11,color:"#bbb"}}>Giorno {tx.recurring_day||25} · {cat?.name||"—"}</div>
-                      </div>
-                      <div style={{textAlign:"right",flexShrink:0}}>
-                        {confirmed ? (
-                          <div>
-                            <input type="number" defaultValue={conf.actual_amount??tx.amount}
-                              onBlur={e=>updateActual(tx,month,year,e.target.value)}
-                              style={{width:80,border:"1.5px solid #6366f133",borderRadius:8,padding:"4px 8px",fontSize:13,fontWeight:700,textAlign:"right",color:"#1a1a2e"}}/>
-                            <div style={{fontSize:10,color:"#10b981",fontWeight:700,marginTop:2}}>✅ Confermato</div>
-                          </div>
-                        ) : (
-                          <div>
-                            <div style={{fontSize:14,fontWeight:700,color:"#999",textDecoration:"line-through"}}>{acc.currency} {fmtN(tx.amount)}</div>
-                            <div style={{fontSize:10,color:"#bbb"}}>🔮 Forecast</div>
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={()=>confirmFixed(tx,month,year)} disabled={loading}
-                        style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${confirmed?"#10b98133":"#6366f133"}`,background:confirmed?"#f0fff4":"#f0f0ff",color:confirmed?"#10b981":"#6366f1",fontSize:11,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
-                        {confirmed?"✓ Confermato":"Conferma"}
-                      </button>
-                    </div>
-                  );
-                })}
+                <AreaChart data={s.map(d=>({label:d.label,value:d.expense,value2:d.income}))} color="#ef4444" color2="#10b981" showBoth height={70}/>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8,fontSize:10,color:"#bbb"}}>
+                  <span>↑ {fmtN(s.filter(d=>d.isFuture).reduce((s,d)=>s+d.income,0))}</span>
+                  <span>↓ {fmtN(s.filter(d=>d.isFuture).reduce((s,d)=>s+d.expense,0))}</span>
+                </div>
               </div>
             );
           })}
         </div>
-      ))}
+      )}
+
+      {/* Confirmation detail (collapsible) */}
+      <div style={{background:"#fff",borderRadius:18,boxShadow:"0 2px 12px #0001",overflow:"hidden"}}>
+        <button onClick={()=>setShowDetail(s=>!s)}
+          style={{width:"100%",padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1a2e"}}>📋 Conferma Voci Mensili</div>
+          <div style={{fontSize:12,color:"#6366f1",fontWeight:600}}>{showDetail?"▲ Chiudi":"▼ Espandi"}</div>
+        </button>
+        {showDetail&&(
+          <div style={{borderTop:"1px solid #f5f5f5"}}>
+            {monthRange.map(({month,year,isFuture})=>{
+              const relevantTx = view==="all" ? fixedTx : fixedTx.filter(tx=>tx.account_id===view);
+              if(!relevantTx.length) return null;
+              const confirmed = relevantTx.filter(tx=>isConfirmed(tx.id,month,year)).length;
+              return (
+                <div key={`${month}${year}`} style={{borderBottom:"1px solid #f9f9f9"}}>
+                  <div style={{padding:"10px 18px",background:isFuture?"#f8f9ff":"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:12,fontWeight:700,color:isFuture?"#6366f1":"#1a1a2e"}}>{isFuture?"🔮":""} {month} {year}</span>
+                    <span style={{fontSize:11,color:"#bbb"}}>{confirmed}/{relevantTx.length} confermati</span>
+                  </div>
+                  {relevantTx.map(tx=>{
+                    const key=getKey(tx.id,month,year);
+                    const conf=confirmations[key];
+                    const confirmed=conf?.confirmed;
+                    const cat=catMap[tx.category_id];
+                    const acc=accMap[tx.account_id];
+                    return (
+                      <div key={tx.id} style={{padding:"9px 18px",display:"flex",alignItems:"center",gap:10,borderTop:"1px solid #f5f5f5"}}>
+                        <div style={{width:28,height:28,borderRadius:8,background:cat?.color+"22"||"#f5f5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{cat?.icon||"📌"}</div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:12,fontWeight:600,color:confirmed?"#1a1a2e":"#aaa"}}>{tx.name}</div>
+                          <div style={{fontSize:10,color:"#ccc"}}>{acc?.icon} {acc?.name} · gg {tx.recurring_day||25}</div>
+                        </div>
+                        {confirmed ? (
+                          <input type="number" defaultValue={conf.actual_amount??tx.amount}
+                            onBlur={e=>updateActual(tx,month,year,e.target.value)}
+                            style={{width:72,border:"1.5px solid #10b98133",borderRadius:8,padding:"3px 7px",fontSize:12,fontWeight:700,textAlign:"right",color:"#10b981"}}/>
+                        ) : (
+                          <span style={{fontSize:12,color:"#bbb",textDecoration:"line-through"}}>{acc?.currency} {fmtN(tx.amount)}</span>
+                        )}
+                        <button onClick={()=>confirmFixed(tx,month,year)} disabled={loading}
+                          style={{padding:"5px 10px",borderRadius:8,border:`1px solid ${confirmed?"#10b98133":"#6366f133"}`,background:confirmed?"#f0fff4":"#f0f0ff",color:confirmed?"#10b981":"#6366f1",fontSize:11,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
+                          {confirmed?"✓":"Conferma"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -1428,40 +1897,74 @@ const AuthScreen = ({onAuth}) => {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [showPw,setShowPw]=useState(false);
+
   const handle=async()=>{
     if(!email||!pw){setError("Inserisci email e password");return;}
     if(mode==="register"&&!name){setError("Inserisci il tuo nome");return;}
     setLoading(true);setError("");
     try {
       const data=mode==="login"?await sb.auth.signIn(email,pw):await sb.auth.signUp(email,pw,name);
-      if(data.error) throw new Error(data.error_description||data.msg||"Errore di autenticazione");
+      if(data.error) throw new Error(data.error_description||data.msg||"Credenziali non valide");
       if(!data.access_token) throw new Error("Credenziali non valide");
       localStorage.setItem("sb_session",JSON.stringify({access_token:data.access_token,refresh_token:data.refresh_token,user:data.user}));
       onAuth({token:data.access_token,refresh_token:data.refresh_token,user:data.user});
     } catch(e){setError(e.message);}
     setLoading(false);
   };
+
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
-      <div style={{width:"100%",maxWidth:400}}>
+    <div style={{minHeight:"100vh",background:`linear-gradient(135deg,#0f1117 0%,#1c1f2e 60%,#16213e 100%)`,display:"flex",fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <style>{CSS}</style>
+      {/* Left panel — branding */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"60px 64px",display:"none"}}>
+      </div>
+      {/* Right panel — form */}
+      <div style={{width:"100%",maxWidth:460,margin:"auto",padding:24}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{fontSize:52,marginBottom:12}}>💼</div>
-          <div style={{fontSize:26,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Finanza Familiare</div>
-          <div style={{fontSize:13,color:"#ffffff55",marginTop:4}}>Gestisci il tuo budget in CHF e €</div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <div style={{width:42,height:42,borderRadius:14,background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 20px ${T.primary}55`}}>💼</div>
+            <div style={{fontSize:24,fontWeight:800,color:"#fff",letterSpacing:-0.5}}>Fina</div>
+          </div>
+          <div style={{fontSize:13,color:"#ffffff44"}}>Gestione finanziaria familiare multidevice</div>
         </div>
-        <div style={{background:"#fff",borderRadius:24,padding:32,boxShadow:"0 20px 60px #00000055"}}>
+
+        <div style={{background:T.surface,borderRadius:24,padding:32,boxShadow:"0 24px 80px #00000055"}}>
           <TabSwitch tabs={[["login","Accedi"],["register","Registrati"]]} value={mode} onChange={v=>{setMode(v);setError("");}}/>
-          {mode==="register"&&<Field label="NOME COMPLETO"><Inp value={name} onChange={e=>setName(e.target.value)} placeholder="Mario Rossi"/></Field>}
-          <Field label="EMAIL"><Inp type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="mario@email.com"/></Field>
+
+          {mode==="register"&&(
+            <Field label="NOME COMPLETO">
+              <Inp value={name} onChange={e=>setName(e.target.value)} placeholder="Mario Rossi" autoFocus/>
+            </Field>
+          )}
+          <Field label="EMAIL">
+            <Inp type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="mario@esempio.com"/>
+          </Field>
           <Field label="PASSWORD">
             <div style={{position:"relative"}}>
-              <Inp type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" style={{paddingRight:44}}/>
-              <button onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#bbb"}}>{showPw?"🙈":"👁"}</button>
+              <Inp type={showPw?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} placeholder="Minimo 8 caratteri" style={{paddingRight:44}}/>
+              <button onClick={()=>setShowPw(!showPw)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:T.gray400}}>{showPw?"🙈":"👁"}</button>
             </div>
           </Field>
-          {error&&<div style={{background:"#fff0f0",border:"1px solid #fecaca",borderRadius:10,padding:"10px 14px",fontSize:13,color:"#ef4444",marginBottom:16}}>⚠️ {error}</div>}
-          <Btn onClick={handle} disabled={loading} label={loading?"Caricamento...":mode==="login"?"Accedi →":"Crea account →"}/>
-          {mode==="login"&&<div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#bbb"}}>Non hai un account? <button onClick={()=>{setMode("register");setError("");}} style={{background:"none",border:"none",color:"#6366f1",fontWeight:700,cursor:"pointer",fontSize:12}}>Registrati</button></div>}
+
+          {error&&(
+            <div style={{background:"#fff0f0",border:`1px solid ${T.danger}33`,borderRadius:10,padding:"10px 14px",fontSize:13,color:T.danger,marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+              <span>⚠️</span>{error}
+            </div>
+          )}
+
+          <Btn onClick={handle} disabled={loading} label={loading?"Caricamento...":mode==="login"?"Accedi →":"Crea account →"} color={T.primary}/>
+
+          {mode==="login"&&(
+            <div style={{textAlign:"center",marginTop:16,fontSize:13,color:T.gray400}}>
+              Nessun account?{" "}
+              <button onClick={()=>{setMode("register");setError("");}} style={{background:"none",border:"none",color:T.primary,fontWeight:600,cursor:"pointer",fontSize:13}}>
+                Registrati gratis
+              </button>
+            </div>
+          )}
+        </div>
+        <div style={{textAlign:"center",marginTop:20,fontSize:11,color:"#ffffff22"}}>
+          Dati protetti · Isolamento per utente · Powered by Supabase
         </div>
       </div>
     </div>
@@ -1853,20 +2356,38 @@ const BudgetApp = () => {
     setTimeout(()=>signOut(),1500);
   },[t,user,showToast,signOut]);
 
-  const exportCSV=()=>{const rows=[["Data","Nome","Tipo","Fisso","Categoria","Conto","Importo","Valuta","Note"]];filteredAll.forEach(tx=>{const acc=accMap[tx.account_id];rows.push([tx.date,tx.name,tx.type,tx.is_fixed?"Sì":"No",catMap[tx.category_id]?.name||"",acc?.name||"",tx.amount,acc?.currency||"",tx.note||""]);});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(";")).join("\n")],{type:"text/csv"}));a.download=`finanza_${filterMonth}_${filterYear}.csv`;a.click();showToast("Export completato ✓");};
+  const exportCSV=()=>{const rows=[["Data","Nome","Tipo","Fisso","Categoria","Conto","Importo","Valuta","Note"]];filteredAll.forEach(tx=>{const acc=accMap[tx.account_id];rows.push([tx.date,tx.name,tx.type,tx.is_fixed?"Sì":"No",catMap[tx.category_id]?.name||"",acc?.name||"",tx.amount,acc?.currency||"",tx.note||""]);});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(";")).join("\n")],{type:"text/csv"}));a.download=`fina_${filterMonth}_${filterYear}.csv`;a.click();showToast("Export completato ✓");};
 
-  if(loading) return <div style={{minHeight:"100vh",background:"#f8f9fc",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,fontFamily:"'Segoe UI',system-ui,sans-serif"}}><div style={{width:40,height:40,border:"3px solid #eee",borderTop:"3px solid #6366f1",borderRadius:"50%",animation:"spin 1s linear infinite"}}/><style>{CSS}</style></div>;
+  // ── Check if onboarding needed ───────────────────────────────────────────
+  const needsOnboarding = !loading && accounts.length === 0;
 
-  const selStyle={border:"1.5px solid #eee",borderRadius:8,padding:"6px 26px 6px 10px",fontSize:12,color:"#1a1a2e",background:"#fff",cursor:"pointer",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 8px center"};
+  if(loading) return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:20,fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <style>{CSS}</style>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+        <div style={{width:36,height:36,borderRadius:12,background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💼</div>
+        <div style={{fontSize:20,fontWeight:800,color:T.gray900}}>Fina</div>
+      </div>
+      <div style={{width:44,height:44,border:`3px solid ${T.gray100}`,borderTop:`3px solid ${T.primary}`,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <div style={{fontSize:13,color:T.gray400}}>Caricamento in corso...</div>
+    </div>
+  );
+
+  if(needsOnboarding) return (
+    <OnboardingWizard user={user} token={token} onComplete={()=>load()}/>
+  );
+
+  const selStyle={border:`1.5px solid ${T.gray200}`,borderRadius:8,padding:"6px 26px 6px 10px",fontSize:12,color:T.gray700,background:T.surface,cursor:"pointer",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 8px center"};
+
   const navItems=[
-    {id:"dashboard",   icon:"⊞", label:"Home"},
-    {id:"transactions",icon:"↕", label:"Movimenti"},
-    {id:"fixed",       icon:"📌",label:"Fisso"},
-    {id:"forecast",    icon:"🔮",label:"Forecast"},
-    {id:"reports",     icon:"◑", label:"Report"},
+    {id:"dashboard",    icon:"⊞", label:"Home"},
+    {id:"transactions", icon:"↕", label:"Movimenti"},
+    {id:"fixed",        icon:"📌",label:"Fisso"},
+    {id:"forecast",     icon:"🔮",label:"Forecast"},
+    {id:"reports",      icon:"◑", label:"Report"},
     {id:"reportbuilder",icon:"🔨",label:"Builder"},
-    {id:"savings",     icon:"🎯",label:"Risparmi"},
-    {id:"settings",    icon:"⚙", label:"Impost."},
+    {id:"savings",      icon:"🎯",label:"Risparmi"},
+    {id:"settings",     icon:"⚙", label:"Impostazioni"},
   ];
 
   // ── DASHBOARD WIDGETS ─────────────────────────────────────────────────────
@@ -2034,37 +2555,109 @@ const BudgetApp = () => {
   };
 
   return (
-    <div style={{display:"flex",minHeight:"100vh",background:"#f8f9fc",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+    <div style={{display:"flex",minHeight:"100vh",background:T.bg,fontFamily:"'Inter',system-ui,sans-serif"}}>
       <style>{CSS}</style>
       {toast&&<Toast {...toast}/>}
 
-      {/* Desktop sidebar */}
+      {/* ── DESKTOP SIDEBAR ── */}
       {!isMobile&&(
-        <div style={{width:220,background:"#fff",borderRight:"1px solid #f0f0f0",position:"fixed",top:0,bottom:0,left:0,zIndex:100,display:"flex",flexDirection:"column",boxShadow:"2px 0 12px #0001"}}>
-          <div style={{padding:"24px 20px 16px"}}><div style={{fontSize:16,fontWeight:900,color:"#1a1a2e"}}>💼 Finanza</div><div style={{fontSize:11,color:"#bbb",marginTop:2}}>{user?.email}</div></div>
-          <div style={{flex:1,padding:"8px 12px",overflowY:"auto"}}>
-            {navItems.map(n=>(<button key={n.id} onClick={()=>setPage(n.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",marginBottom:4,background:page===n.id?"#f0f0ff":"transparent",border:"none",borderRadius:10,color:page===n.id?"#6366f1":"#666",fontWeight:page===n.id?700:400,fontSize:14,cursor:"pointer",textAlign:"left"}}><span style={{fontSize:18}}>{n.icon}</span>{n.label}</button>))}
+        <div style={{width:240,background:T.sidebar,position:"fixed",top:0,bottom:0,left:0,zIndex:100,display:"flex",flexDirection:"column",boxShadow:"4px 0 24px #00000022"}}>
+          {/* Logo */}
+          <div style={{padding:"22px 20px 18px",borderBottom:"1px solid #ffffff0a"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:34,height:34,borderRadius:10,background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:`0 2px 12px ${T.primary}55`}}>💼</div>
+              <div>
+                <div style={{fontSize:16,fontWeight:800,color:"#fff",letterSpacing:-0.3}}>Fina</div>
+                <div style={{fontSize:10,color:"#ffffff33",marginTop:-1}}>Budget Manager</div>
+              </div>
+            </div>
           </div>
-          <div style={{padding:"16px 20px",borderTop:"1px solid #f0f0f0"}}>
-            <div style={{fontSize:12,color:"#999",marginBottom:8}}>1 CHF = {fmtN(exchangeRate,4)} €</div>
-            <button onClick={()=>openModal("share")} style={{width:"100%",padding:"8px 0",background:"#f0f0ff",border:"none",borderRadius:10,color:"#6366f1",fontSize:12,cursor:"pointer",fontWeight:600,marginBottom:6}}>👨‍👩‍👧 Condividi</button>
-            <button onClick={()=>openModal("import")} style={{width:"100%",padding:"8px 0",background:"#f0fff4",border:"none",borderRadius:10,color:"#10b981",fontSize:12,cursor:"pointer",fontWeight:600,marginBottom:6}}>📥 Import Excel</button>
-            <button onClick={signOut} style={{width:"100%",padding:"8px 0",background:"#f5f5f5",border:"none",borderRadius:10,color:"#999",fontSize:12,cursor:"pointer",fontWeight:600}}>Esci →</button>
+
+          {/* Nav */}
+          <nav style={{flex:1,padding:"12px 10px",overflowY:"auto"}}>
+            {navItems.map(n=>{
+              const active=page===n.id;
+              return (
+                <button key={n.id} onClick={()=>setPage(n.id)} style={{
+                  width:"100%",display:"flex",alignItems:"center",gap:10,
+                  padding:"9px 12px",marginBottom:2,
+                  background:active?T.sidebarActive:"transparent",
+                  border:`1px solid ${active?"#ffffff12":"transparent"}`,
+                  borderRadius:10,
+                  color:active?"#fff":"#ffffff55",
+                  fontWeight:active?600:400,fontSize:13,
+                  cursor:"pointer",textAlign:"left",
+                  transition:"all .15s",
+                }}>
+                  <span style={{fontSize:16,opacity:active?1:0.6}}>{n.icon}</span>
+                  {n.label}
+                  {active&&<div style={{marginLeft:"auto",width:5,height:5,borderRadius:"50%",background:T.primary}}/>}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Bottom */}
+          <div style={{padding:"12px 10px",borderTop:"1px solid #ffffff0a"}}>
+            <div style={{padding:"10px 12px",marginBottom:8,background:"#ffffff08",borderRadius:10}}>
+              <div style={{fontSize:11,color:"#ffffff44",marginBottom:2}}>Tassi live</div>
+              <div style={{fontSize:11,color:"#ffffff88"}}>
+                CHF {fmtN(1/rates.CHF,4)} € · $ {fmtN(1/rates.USD,4)} €
+              </div>
+            </div>
+            <button onClick={()=>openModal("share")} style={{width:"100%",padding:"8px 12px",background:"#ffffff08",border:"none",borderRadius:10,color:"#ffffff66",fontSize:12,cursor:"pointer",fontWeight:500,textAlign:"left",marginBottom:4}}>
+              👨‍👩‍👧 Condividi accesso
+            </button>
+            <button onClick={()=>openModal("import")} style={{width:"100%",padding:"8px 12px",background:"#ffffff08",border:"none",borderRadius:10,color:"#ffffff66",fontSize:12,cursor:"pointer",fontWeight:500,textAlign:"left",marginBottom:4}}>
+              📥 Import / Export
+            </button>
+            <button onClick={signOut} style={{width:"100%",padding:"8px 12px",background:"transparent",border:"none",borderRadius:10,color:"#ffffff33",fontSize:12,cursor:"pointer",fontWeight:400,textAlign:"left"}}>
+              ↩ Esci
+            </button>
           </div>
         </div>
       )}
 
-      {/* Main content */}
-      <div style={{flex:1,marginLeft:isMobile?0:220,paddingBottom:isMobile?90:0}}>
+      {/* ── MAIN CONTENT ── */}
+      <div style={{flex:1,marginLeft:isMobile?0:240,paddingBottom:isMobile?80:0,minHeight:"100vh"}}>
+
         {/* Topbar */}
-        <div style={{background:"#fff",borderBottom:"1px solid #f0f0f0",padding:isMobile?"14px 16px":"14px 28px",position:"sticky",top:0,zIndex:99,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{fontSize:isMobile?16:15,fontWeight:800,color:"#1a1a2e"}}>
-            {isMobile?`${navItems.find(n=>n.id===page)?.icon} ${navItems.find(n=>n.id===page)?.label}`:`${navItems.find(n=>n.id===page)?.label} · ${filterMonth} ${filterYear}`}
+        <div style={{
+          background:T.surface,borderBottom:`1px solid ${T.gray100}`,
+          padding:isMobile?"12px 16px":"14px 28px",
+          position:"sticky",top:0,zIndex:99,
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          boxShadow:"0 1px 0 #0000000a",
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            {isMobile&&(
+              <div style={{fontSize:18}}>{navItems.find(n=>n.id===page)?.icon}</div>
+            )}
+            <div>
+              <div style={{fontSize:15,fontWeight:700,color:T.gray900}}>
+                {navItems.find(n=>n.id===page)?.label}
+              </div>
+              {!isMobile&&<div style={{fontSize:11,color:T.gray400,marginTop:1}}>{filterMonth} {filterYear}</div>}
+            </div>
           </div>
+
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {page==="dashboard"&&<button onClick={()=>openModal("customizeDash")} style={{background:"#f0f0ff",border:"none",borderRadius:8,padding:"6px 10px",color:"#6366f1",fontSize:12,cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>✨ Personalizza</button>}
-            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={selStyle}>{MONTHS.map(m=><option key={m}>{m}</option>)}</select>
-            <select value={filterYear} onChange={e=>setFilterYear(Number(e.target.value))} style={selStyle}>{[CUR_YEAR-1,CUR_YEAR,CUR_YEAR+1].map(y=><option key={y}>{y}</option>)}</select>
+            {page==="dashboard"&&(
+              <button onClick={()=>openModal("customizeDash")} style={{padding:"6px 12px",background:T.primaryLt,border:"none",borderRadius:8,color:T.primary,fontSize:12,cursor:"pointer",fontWeight:600}}>
+                ✨ Personalizza
+              </button>
+            )}
+            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={selStyle}>
+              {MONTHS.map(m=><option key={m}>{m}</option>)}
+            </select>
+            <select value={filterYear} onChange={e=>setFilterYear(Number(e.target.value))} style={selStyle}>
+              {[CUR_YEAR-1,CUR_YEAR,CUR_YEAR+1].map(y=><option key={y}>{y}</option>)}
+            </select>
+            {!isMobile&&(
+              <div style={{width:32,height:32,borderRadius:10,background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={()=>setPage("settings")}>
+                {(user?.email||"?")[0].toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
 
@@ -2227,6 +2820,7 @@ const BudgetApp = () => {
           {page==="forecast"&&(
             <ForecastPage
               fixedTx={fixedTx}
+              variableTx={variableTx}
               accounts={accounts}
               categories={categories}
               accMap={accMap}
@@ -2352,16 +2946,45 @@ const BudgetApp = () => {
         </div>
       </div>
 
-      {/* Mobile bottom nav */}
+      {/* ── MOBILE BOTTOM NAV (5 items max) ── */}
       {isMobile&&(
-        <div style={{position:"fixed",bottom:0,left:0,right:0,background:"#fff",borderTop:"1px solid #f0f0f0",display:"flex",zIndex:200,boxShadow:"0 -4px 20px #0001"}}>
-          {navItems.map(n=>(<button key={n.id} onClick={()=>setPage(n.id)} style={{flex:1,padding:"10px 0 8px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><div style={{fontSize:18,opacity:page===n.id?1:0.3}}>{n.icon}</div><div style={{fontSize:8,fontWeight:page===n.id?700:400,color:page===n.id?"#6366f1":"#bbb"}}>{n.label.toUpperCase()}</div>{page===n.id&&<div style={{width:4,height:4,borderRadius:"50%",background:"#6366f1"}}/>}</button>))}
+        <div style={{
+          position:"fixed",bottom:0,left:0,right:0,
+          background:T.sidebar,
+          borderTop:`1px solid #ffffff0a`,
+          display:"flex",zIndex:200,
+          paddingBottom:"env(safe-area-inset-bottom,0px)",
+          boxShadow:"0 -4px 24px #00000033",
+        }}>
+          {[navItems[0],navItems[1],navItems[2],navItems[6],navItems[7]].map(n=>{
+            const active=page===n.id;
+            return (
+              <button key={n.id} onClick={()=>setPage(n.id)} style={{
+                flex:1,padding:"11px 0 9px",background:"none",border:"none",
+                cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,
+              }}>
+                <div style={{fontSize:19,opacity:active?1:0.35}}>{n.icon}</div>
+                <div style={{fontSize:9,fontWeight:active?700:400,color:active?"#fff":"#ffffff33",letterSpacing:"0.03em"}}>
+                  {n.label.split(" ")[0].toUpperCase()}
+                </div>
+                {active&&<div style={{position:"absolute",top:0,width:20,height:2,borderRadius:2,background:T.primary,marginTop:0}}/>}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* FAB */}
+      {/* ── FAB ── */}
       {isMobile&&page!=="settings"&&(
-        <button onClick={()=>openModal("tx",{date:TODAY,type:"expense",account_id:accounts[0]?.id})} style={{position:"fixed",bottom:76,right:20,width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",border:"none",color:"#fff",fontSize:24,cursor:"pointer",boxShadow:"0 4px 20px #6366f166",zIndex:150,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+        <button onClick={()=>openModal("tx",{date:TODAY,type:"expense",account_id:accounts[0]?.id})}
+          style={{
+            position:"fixed",bottom:72,right:20,
+            width:54,height:54,borderRadius:"50%",
+            background:`linear-gradient(135deg,${T.primary},${T.primaryDk})`,
+            border:"none",color:"#fff",fontSize:26,cursor:"pointer",
+            boxShadow:`0 4px 20px ${T.primary}66`,zIndex:150,
+            display:"flex",alignItems:"center",justifyContent:"center",
+          }}>+</button>
       )}
 
       {/* ── MODALS ── */}
@@ -2402,9 +3025,9 @@ const BudgetApp = () => {
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const configured=SUPABASE_URL!=="https://xxxx.supabase.co";
-  const [session,setSession]=useState(null);
-  const [checking,setChecking]=useState(true);
+  const configured = SUPABASE_URL !== "https://xxxx.supabase.co";
+  const [session, setSession] = useState(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(()=>{
     if(!configured){setChecking(false);return;}
@@ -2414,26 +3037,55 @@ export default function App() {
         if(!saved){setChecking(false);return;}
         const s=JSON.parse(saved);
         const u=await sb.auth.getUser(s.access_token);
-        if(u?.id){setSession({...s,user:u});}
-        else if(s.refresh_token){const r=await sb.auth.refresh(s.refresh_token);if(r?.access_token){const ns={access_token:r.access_token,refresh_token:r.refresh_token,user:r.user};localStorage.setItem("sb_session",JSON.stringify(ns));setSession(ns);}else localStorage.removeItem("sb_session");}
-        else localStorage.removeItem("sb_session");
-      }catch{localStorage.removeItem("sb_session");}
+        if(u?.id){ setSession({...s,user:u}); }
+        else if(s.refresh_token){
+          const r=await sb.auth.refresh(s.refresh_token);
+          if(r?.access_token){
+            const ns={access_token:r.access_token,refresh_token:r.refresh_token,user:r.user};
+            localStorage.setItem("sb_session",JSON.stringify(ns));
+            setSession(ns);
+          } else localStorage.removeItem("sb_session");
+        } else localStorage.removeItem("sb_session");
+      } catch { localStorage.removeItem("sb_session"); }
       setChecking(false);
     })();
   },[]);
 
   const signOut=useCallback(async()=>{
-    if(session?.access_token)await sb.auth.signOut(session.access_token);
-    localStorage.removeItem("sb_session");setSession(null);
+    if(session?.access_token) await sb.auth.signOut(session.access_token);
+    localStorage.removeItem("sb_session");
+    setSession(null);
   },[session]);
 
-  if(!configured)return(<div style={{minHeight:"100vh",background:"#f8f9fc",display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Segoe UI',system-ui,sans-serif"}}><div style={{maxWidth:380,textAlign:"center"}}><div style={{fontSize:48,marginBottom:16}}>⚙️</div><div style={{fontSize:18,fontWeight:800,color:"#1a1a2e",marginBottom:12}}>Credenziali mancanti</div><div style={{background:"#fff",borderRadius:16,padding:20,fontSize:13,color:"#666",lineHeight:1.7,boxShadow:"0 2px 12px #0001"}}>Sostituisci <code style={{color:"#6366f1"}}>SUPABASE_URL</code> e <code style={{color:"#6366f1"}}>SUPABASE_KEY</code> in cima al file.</div></div></div>);
-  if(checking)return<div style={{minHeight:"100vh",background:"#f8f9fc",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:40,height:40,border:"3px solid #eee",borderTop:"3px solid #6366f1",borderRadius:"50%",animation:"spin 1s linear infinite"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
+  if(!configured) return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <style>{CSS}</style>
+      <Card style={{maxWidth:400,textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:16}}>⚙️</div>
+        <div style={{fontSize:18,fontWeight:700,color:T.gray900,marginBottom:8}}>Credenziali non configurate</div>
+        <div style={{fontSize:13,color:T.gray500,lineHeight:1.7}}>
+          Sostituisci <code style={{background:T.primaryLt,color:T.primary,padding:"2px 6px",borderRadius:4}}>SUPABASE_URL</code> e{" "}
+          <code style={{background:T.primaryLt,color:T.primary,padding:"2px 6px",borderRadius:4}}>SUPABASE_KEY</code>{" "}
+          in cima al file con i valori da <strong>Supabase → Project Settings → API</strong>.
+        </div>
+      </Card>
+    </div>
+  );
 
-  return(
+  if(checking) return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui,sans-serif"}}>
+      <style>{CSS}</style>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:44,height:44,border:`3px solid ${T.gray100}`,borderTop:`3px solid ${T.primary}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/>
+        <div style={{fontSize:13,color:T.gray400}}>Caricamento…</div>
+      </div>
+    </div>
+  );
+
+  return (
     <AuthCtx.Provider value={{token:session?.access_token,user:session?.user,signOut}}>
       <style>{CSS}</style>
-      {session?<BudgetApp/>:<AuthScreen onAuth={setSession}/>}
+      {session ? <BudgetApp/> : <AuthScreen onAuth={setSession}/>}
     </AuthCtx.Provider>
   );
 }
