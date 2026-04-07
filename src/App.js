@@ -534,6 +534,114 @@ const AuthScreen = ({onAuth}) => {
   );
 };
 
+// ─── REPORTS PAGE COMPONENT ───────────────────────────────────────────────────
+const ReportsPage = ({ filteredAll, variableTx, fixedAsMonthly, filterYear, accounts, catMap, accMap, trend, exportCSV, openModal }) => {
+  const [rPeriod, setRPeriod] = useState("month");
+  const [dFrom, setDFrom] = useState(`${CUR_YEAR}-01-01`);
+  const [dTo, setDTo] = useState(TODAY);
+
+  const pTx = useMemo(() => {
+    if (rPeriod === "month") return filteredAll;
+    return [...variableTx, ...fixedAsMonthly].filter(tx => {
+      const d = tx.date;
+      if (rPeriod === "year") return d.startsWith(String(filterYear));
+      if (rPeriod === "custom") return d >= dFrom && d <= dTo;
+      return true;
+    });
+  }, [rPeriod, dFrom, dTo, filteredAll, variableTx, fixedAsMonthly, filterYear]);
+
+  const pExp = pTx.filter(tx => tx.type === "expense");
+  const pInc = pTx.filter(tx => tx.type === "income");
+  const pSav = pTx.filter(tx => tx.type === "saving");
+  const totE = pExp.reduce((s, tx) => s + Number(tx.amount), 0);
+  const totI = pInc.reduce((s, tx) => s + Number(tx.amount), 0);
+  const totS = pSav.reduce((s, tx) => s + Number(tx.amount), 0);
+
+  const pCats = useMemo(() => {
+    const m = {};
+    pExp.forEach(tx => { const c = tx.category_id || "none"; if (!m[c]) m[c] = 0; m[c] += Number(tx.amount); });
+    return Object.entries(m).map(([cid, val]) => ({ cid, val, cat: catMap[cid] || { name:"Altro", color:"#9ca3af", icon:"📦" } })).sort((a, b) => b.val - a.val);
+  }, [pExp, catMap]);
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      {/* Period selector */}
+      <div style={{ background:"#fff", borderRadius:16, padding:18, boxShadow:"0 2px 12px #0001" }}>
+        <div style={{ fontSize:13, fontWeight:700, marginBottom:14 }}>Periodo di analisi</div>
+        <TabSwitch tabs={[["month","Mese"],["year","Anno"],["custom","Personalizzato"]]} value={rPeriod} onChange={setRPeriod}/>
+        {rPeriod === "custom" && (
+          <div style={{ display:"flex", gap:10 }}>
+            <Field label="DA"><Inp type="date" value={dFrom} onChange={e => setDFrom(e.target.value)}/></Field>
+            <Field label="A"><Inp type="date" value={dTo} onChange={e => setDTo(e.target.value)}/></Field>
+          </div>
+        )}
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+        {[{l:"Entrate",v:totI,c:"#10b981"},{l:"Uscite",v:totE,c:"#ef4444"},{l:"Saldo",v:totI-totE-totS,c:totI-totE-totS>=0?"#6366f1":"#ef4444"}].map(k=>(
+          <div key={k.l} style={{ background:"#fff", borderRadius:14, padding:12, boxShadow:"0 2px 8px #0001", textAlign:"center" }}>
+            <div style={{ fontSize:11, color:"#bbb", marginBottom:3 }}>{k.l}</div>
+            <div style={{ fontSize:16, fontWeight:800, color:k.c }}>{fmtN(k.v)}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Donut */}
+      {pCats.length > 0 && (
+        <div style={{ background:"#fff", borderRadius:20, padding:20, boxShadow:"0 2px 12px #0001" }}>
+          <div style={{ fontSize:13, fontWeight:700, marginBottom:16 }}>Distribuzione Spese</div>
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
+            <DonutChart data={pCats.map(c=>({value:c.val,color:c.cat.color}))} size={200} centerLabel="Totale" centerValue={fmtN(totE)}/>
+          </div>
+          {pCats.map(c=>(
+            <div key={c.cid} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #f5f5f5" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:12, height:12, borderRadius:4, background:c.cat.color }}/>
+                <span style={{ fontSize:13, color:"#666" }}>{c.cat.icon} {c.cat.name}</span>
+              </div>
+              <div>
+                <span style={{ fontSize:13, fontWeight:700 }}>{fmtN(c.val)}</span>
+                <span style={{ fontSize:11, color:"#bbb", marginLeft:6 }}>({totE>0?((c.val/totE)*100).toFixed(0):0}%)</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Per account */}
+      {accounts.map(acc => {
+        const inc = pInc.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0);
+        const exp = pExp.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0);
+        const sav = pSav.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0);
+        return (
+          <div key={acc.id} style={{ background:"#fff", borderRadius:18, padding:18, boxShadow:"0 2px 12px #0001", borderLeft:`4px solid ${acc.color}` }}>
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:12 }}>{acc.icon} {acc.name} ({acc.currency})</div>
+            {[{l:"Entrate",v:inc,c:"#10b981"},{l:"Uscite",v:exp,c:"#ef4444"},{l:"Risparmi",v:sav,c:"#6366f1"},{l:"Saldo",v:inc-exp-sav,c:inc-exp-sav>=0?"#10b981":"#ef4444"}].map(r=>(
+              <div key={r.l} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #f5f5f5" }}>
+                <span style={{ fontSize:13, color:"#666" }}>{r.l}</span>
+                <span style={{ fontSize:14, fontWeight:800, color:r.c }}>{r.v>=0?"+":""}{acc.currency} {fmtN(r.v)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+
+      {/* Trend */}
+      <div style={{ background:"#fff", borderRadius:20, padding:20, boxShadow:"0 2px 12px #0001" }}>
+        <div style={{ fontSize:13, fontWeight:700, marginBottom:14 }}>Trend Ultimi 6 Mesi</div>
+        <BarChart data={trend} color="#6366f1"/>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+        <button onClick={exportCSV} style={{ background:"#1a1a2e", border:"none", borderRadius:10, padding:"10px 18px", color:"#fff", fontSize:13, cursor:"pointer", fontWeight:600 }}>⬇ Export CSV</button>
+        <button onClick={()=>openModal("import")} style={{ background:"#10b981", border:"none", borderRadius:10, padding:"10px 18px", color:"#fff", fontSize:13, cursor:"pointer", fontWeight:600 }}>📥 Import Excel</button>
+      </div>
+    </div>
+  );
+};
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 const BudgetApp = () => {
   const {token,user,signOut}=useAuth();
@@ -892,34 +1000,20 @@ const BudgetApp = () => {
           )}
 
           {/* ── REPORTS ── */}
-          {page==="reports"&&(()=>{
-            const [rPeriod,setRPeriod]=useState("month");
-            const [dFrom,setDFrom]=useState(`${CUR_YEAR}-01-01`);
-            const [dTo,setDTo]=useState(TODAY);
-            const pTx=useMemo(()=>{ if(rPeriod==="month")return filteredAll; return [...variableTx,...fixedAsMonthly].filter(tx=>{const d=tx.date;if(rPeriod==="year")return d.startsWith(String(filterYear));if(rPeriod==="custom")return d>=dFrom&&d<=dTo;return true;}); },[rPeriod,dFrom,dTo]);
-            const pExp=pTx.filter(tx=>tx.type==="expense"),pInc=pTx.filter(tx=>tx.type==="income"),pSav=pTx.filter(tx=>tx.type==="saving");
-            const totE=pExp.reduce((s,tx)=>s+Number(tx.amount),0),totI=pInc.reduce((s,tx)=>s+Number(tx.amount),0),totS=pSav.reduce((s,tx)=>s+Number(tx.amount),0);
-            const pCats=useMemo(()=>{const m={};pExp.forEach(tx=>{const c=tx.category_id||"none";if(!m[c])m[c]=0;m[c]+=Number(tx.amount);});return Object.entries(m).map(([cid,val])=>({cid,val,cat:catMap[cid]||{name:"Altro",color:"#9ca3af",icon:"📦"}})).sort((a,b)=>b.val-a.val);},[pExp]);
-            return(
-              <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                <div style={{background:"#fff",borderRadius:16,padding:18,boxShadow:"0 2px 12px #0001"}}>
-                  <div style={{fontSize:13,fontWeight:700,marginBottom:14}}>Periodo di analisi</div>
-                  <TabSwitch tabs={[["month","Mese"],["year","Anno"],["custom","Personalizzato"]]} value={rPeriod} onChange={setRPeriod}/>
-                  {rPeriod==="custom"&&<div style={{display:"flex",gap:10}}><Field label="DA"><Inp type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)}/></Field><Field label="A"><Inp type="date" value={dTo} onChange={e=>setDTo(e.target.value)}/></Field></div>}
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                  {[{l:"Entrate",v:totI,c:"#10b981"},{l:"Uscite",v:totE,c:"#ef4444"},{l:"Saldo",v:totI-totE-totS,c:totI-totE-totS>=0?"#6366f1":"#ef4444"}].map(k=>(<div key={k.l} style={{background:"#fff",borderRadius:14,padding:12,boxShadow:"0 2px 8px #0001",textAlign:"center"}}><div style={{fontSize:11,color:"#bbb",marginBottom:3}}>{k.l}</div><div style={{fontSize:16,fontWeight:800,color:k.c}}>{fmtN(k.v)}</div></div>))}
-                </div>
-                {pCats.length>0&&<div style={{background:"#fff",borderRadius:20,padding:20,boxShadow:"0 2px 12px #0001"}}><div style={{fontSize:13,fontWeight:700,marginBottom:16}}>Distribuzione Spese</div><div style={{display:"flex",justifyContent:"center",marginBottom:20}}><DonutChart data={pCats.map(c=>({value:c.val,color:c.cat.color}))} size={200} centerLabel="Totale" centerValue={fmtN(totE)}/></div>{pCats.map(c=>(<div key={c.cid} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:12,height:12,borderRadius:4,background:c.cat.color}}/><span style={{fontSize:13,color:"#666"}}>{c.cat.icon} {c.cat.name}</span></div><div><span style={{fontSize:13,fontWeight:700}}>{fmtN(c.val)}</span><span style={{fontSize:11,color:"#bbb",marginLeft:6}}>({totE>0?((c.val/totE)*100).toFixed(0):0}%)</span></div></div>))}</div>}
-                {accounts.map(acc=>{const inc=pInc.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0),exp=pExp.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0),sav=pSav.filter(tx=>tx.account_id===acc.id).reduce((s,tx)=>s+Number(tx.amount),0);return(<div key={acc.id} style={{background:"#fff",borderRadius:18,padding:18,boxShadow:"0 2px 12px #0001",borderLeft:`4px solid ${acc.color}`}}><div style={{fontSize:13,fontWeight:700,marginBottom:12}}>{acc.icon} {acc.name} ({acc.currency})</div>{[{l:"Entrate",v:inc,c:"#10b981"},{l:"Uscite",v:exp,c:"#ef4444"},{l:"Risparmi",v:sav,c:"#6366f1"},{l:"Saldo",v:inc-exp-sav,c:inc-exp-sav>=0?"#10b981":"#ef4444"}].map(r=>(<div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}><span style={{fontSize:13,color:"#666"}}>{r.l}</span><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v>=0?"+":""}{acc.currency} {fmtN(r.v)}</span></div>))}</div>);})}
-                <div style={{background:"#fff",borderRadius:20,padding:20,boxShadow:"0 2px 12px #0001"}}><div style={{fontSize:13,fontWeight:700,marginBottom:14}}>Trend Ultimi 6 Mesi</div><BarChart data={trend} color="#6366f1"/></div>
-                <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-                  <button onClick={exportCSV} style={{background:"#1a1a2e",border:"none",borderRadius:10,padding:"10px 18px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}}>⬇ Export CSV</button>
-                  <button onClick={()=>openModal("import")} style={{background:"#10b981",border:"none",borderRadius:10,padding:"10px 18px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}}>📥 Import Excel</button>
-                </div>
-              </div>
-            );
-          })()}
+          {page==="reports"&&(
+            <ReportsPage
+              filteredAll={filteredAll}
+              variableTx={variableTx}
+              fixedAsMonthly={fixedAsMonthly}
+              filterYear={filterYear}
+              accounts={accounts}
+              catMap={catMap}
+              accMap={accMap}
+              trend={trend}
+              exportCSV={exportCSV}
+              openModal={openModal}
+            />
+          )}
 
           {/* ── SAVINGS ── */}
           {page==="savings"&&(
